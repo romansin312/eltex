@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 int main() {
-    printf("Parent pid is %d, Parent ppid: %d\n", getpid(), getppid());
+    printf("Parent pid: %d, Parent ppid: %d\n", getpid(), getppid());
 
     pid_t child_pid = fork();
 
