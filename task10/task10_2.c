@@ -53,6 +53,9 @@ int main()
             {
                 wait(NULL);
             }
+        } else if (process2_pid > 0) {
+            wait(NULL);
+            wait(NULL);
         }
     }
     
