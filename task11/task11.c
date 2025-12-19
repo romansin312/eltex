@@ -7,6 +7,10 @@
 #define SHOPS_NUM 5
 #define CONSUMERS_NUM 3
 #define PROCUER_AMOUNT 5000
+#define MIN_SHOP_VAL 9000
+#define MAX_SHOP_VAL 11000
+#define MIN_NEED 95000
+#define MAX_NEED 105000
 
 int shops[SHOPS_NUM];
 int consumers[CONSUMERS_NUM];
@@ -82,12 +86,12 @@ int main() {
     srand(time(NULL));
 
     for (int i = 0; i < SHOPS_NUM; i++) {
-        shops[i] = (rand() % (11000 - 9000 + 1)) + 9000;
+        shops[i] = (rand() % (MAX_SHOP_VAL - MIN_SHOP_VAL + 1)) + MIN_SHOP_VAL;
         pthread_mutex_init(&shop_mutexes[i], NULL);
     }
 
     for (int i = 0; i < CONSUMERS_NUM; i++) {
-        consumers[i] = (rand() % (105000 - 95000 + 1) + 95000);
+        consumers[i] = (rand() % (MAX_NEED - MIN_NEED + 1) + MIN_NEED);
 
         int *consumer_index_ptr = malloc(sizeof(int));
         *consumer_index_ptr = i;
