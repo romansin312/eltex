@@ -13,6 +13,6 @@ sigwait_loop: sigwait_loop.c
 	gcc -o sigwait_loop sigwait_loop.c
 
 clean:
-	rm -f receiver sender
+	rm -f receiver sender sigint_blocker sigwait_loop
 
 .PHONY: all clean
