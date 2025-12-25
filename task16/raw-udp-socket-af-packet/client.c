@@ -13,7 +13,7 @@
 #include <net/ethernet.h>
 #include <net/if_arp.h>
 
-#define SERVER_ADDRESS "192.168.56.101"
+#define SERVER_ADDRESS "172.21.98.3"
 #define CLIENT_ADDRESS "172.21.98.224"
 #define SERVER_PORT 8080
 #define CLIENT_PORT 9999
