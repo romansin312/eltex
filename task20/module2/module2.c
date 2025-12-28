@@ -45,7 +45,7 @@ int init_module(void)
 
     if (major < 0)
         return major;
-    pr_info("Major number is %d.\n", major);
+    pr_info("module2: Major number is %d.\n", major);
 
     return 0;
 }
