@@ -14,7 +14,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
-#include <linux/time.h>
 
 #define MAX_DRIVERS 100
 #define SHM_NAME "/taxi_shm"
