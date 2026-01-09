@@ -166,9 +166,9 @@ int create_driver_timer() {
 }
 
 int setup_epoll(int sock_fd, int timer_fd) {
-    int epoll_fd = epoll_create(0);
+    int epoll_fd = epoll_create1(0);
     if (epoll_fd < 0) {
-        printf("epoll_create error\n");
+        printf("epoll_create1 error\n");
         exit(1);
     }
     
