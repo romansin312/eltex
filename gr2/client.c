@@ -24,6 +24,37 @@ unsigned short csum(unsigned short *buf, int nwords) {
     return (unsigned short)(~sum);
 }
 
+void prepare_packet(char *buffer, uint32_t src_ip, uint32_t dst_ip, 
+                    uint16_t src_port, uint16_t dst_port, 
+                    const char *data, int *packet_len) {
+    memset(buffer, 0, BUFFER_SIZE);
+    
+    struct iphdr *ip_header = (struct iphdr *)buffer;
+    ip_header->ihl = 5;
+    ip_header->version = 4;
+    ip_header->tos = 0;
+    *packet_len = sizeof(struct iphdr) + sizeof(struct udphdr) + strlen(data) + 1;
+    ip_header->tot_len = htons(*packet_len);
+    ip_header->id = htons(getpid() & 0xFFFF);
+    ip_header->frag_off = 0;
+    ip_header->ttl = 64;
+    ip_header->protocol = IPPROTO_UDP;
+    ip_header->check = 0;
+    ip_header->saddr = src_ip;
+    ip_header->daddr = dst_ip;
+    
+    ip_header->check = csum((unsigned short *)ip_header, sizeof(struct iphdr) / 2);
+    
+    struct udphdr *udp_header = (struct udphdr *)(buffer + sizeof(struct iphdr));
+    udp_header->source = htons(src_port);
+    udp_header->dest = htons(dst_port);
+    udp_header->len = htons(sizeof(struct udphdr) + strlen(data) + 1);
+    udp_header->check = 0;
+    
+    char *packet_data = buffer + sizeof(struct iphdr) + sizeof(struct udphdr);
+    strcpy(packet_data, data);
+}
+
 int main(int argc, char *argv[]) {
     int sockfd;
     char buffer[BUFFER_SIZE];
@@ -65,6 +96,9 @@ int main(int argc, char *argv[]) {
     tv.tv_usec = 0;
     setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
     
+    uint32_t src_ip = inet_addr("127.0.0.1");
+    uint32_t dst_ip = server_addr.sin_addr.s_addr;
+    
     while (1) {
         printf("> ");
         fflush(stdout);
@@ -80,69 +114,25 @@ int main(int argc, char *argv[]) {
         
         if (strcmp(message, "exit") == 0) {
             char close_msg[] = "CLOSE_CONNECTION";
+            int packet_len;
             
-            memset(buffer, 0, BUFFER_SIZE);
+            prepare_packet(buffer, src_ip, dst_ip, client_port, SERVER_PORT, 
+                          close_msg, &packet_len);
             
-            struct iphdr *ip_header = (struct iphdr *)buffer;
-            ip_header->ihl = 5;
-            ip_header->version = 4;
-            ip_header->tos = 0;
-            ip_header->tot_len = htons(sizeof(struct iphdr) + sizeof(struct udphdr) + strlen(close_msg) + 1);
-            ip_header->id = htons(getpid() & 0xFFFF);
-            ip_header->frag_off = 0;
-            ip_header->ttl = 64;
-            ip_header->protocol = IPPROTO_UDP;
-            ip_header->check = 0;
-            ip_header->saddr = inet_addr("127.0.0.1");
-            ip_header->daddr = server_addr.sin_addr.s_addr;
-            
-            ip_header->check = csum((unsigned short *)ip_header, sizeof(struct iphdr) / 2);
-            
-            struct udphdr *udp_header = (struct udphdr *)(buffer + sizeof(struct iphdr));
-            udp_header->source = htons(client_port);
-            udp_header->dest = htons(SERVER_PORT);
-            udp_header->len = htons(sizeof(struct udphdr) + strlen(close_msg) + 1);
-            udp_header->check = 0;
-            
-            char *data = buffer + sizeof(struct iphdr) + sizeof(struct udphdr);
-            strcpy(data, close_msg);
-            
-            sendto(sockfd, buffer, ntohs(ip_header->tot_len), 0,
+            sendto(sockfd, buffer, packet_len, 0,
                   (struct sockaddr *)&server_addr, sizeof(server_addr));
             
             printf("Connection closed\n");
             break;
         }
         
-        memset(buffer, 0, BUFFER_SIZE);
-        
-        struct iphdr *ip_header = (struct iphdr *)buffer;
-        ip_header->ihl = 5;
-        ip_header->version = 4;
-        ip_header->tos = 0;
-        ip_header->tot_len = htons(sizeof(struct iphdr) + sizeof(struct udphdr) + strlen(message) + 1);
-        ip_header->id = htons(getpid() & 0xFFFF);
-        ip_header->frag_off = 0;
-        ip_header->ttl = 64;
-        ip_header->protocol = IPPROTO_UDP;
-        ip_header->check = 0;
-        ip_header->saddr = inet_addr("127.0.0.1");
-        ip_header->daddr = server_addr.sin_addr.s_addr;
-        
-        ip_header->check = csum((unsigned short *)ip_header, sizeof(struct iphdr) / 2);
-        
-        struct udphdr *udp_header = (struct udphdr *)(buffer + sizeof(struct iphdr));
-        udp_header->source = htons(client_port);
-        udp_header->dest = htons(SERVER_PORT);
-        udp_header->len = htons(sizeof(struct udphdr) + strlen(message) + 1);
-        udp_header->check = 0;
-        
-        char *data = buffer + sizeof(struct iphdr) + sizeof(struct udphdr);
-        strcpy(data, message);
+        int packet_len;
+        prepare_packet(buffer, src_ip, dst_ip, client_port, SERVER_PORT, 
+                      message, &packet_len);
         
         printf("Sending: %s\n", message);
         
-        ssize_t sent_len = sendto(sockfd, buffer, ntohs(ip_header->tot_len), 0,
+        ssize_t sent_len = sendto(sockfd, buffer, packet_len, 0,
                                  (struct sockaddr *)&server_addr, sizeof(server_addr));
         
         if (sent_len < 0) {
